@@ -65,7 +65,10 @@ Q = inverse_dynamics(A,Ad,Add,arm_params)
 
 # run a forward simulation using those joint torques Q
 A0, Ad0 = A[0,:], Ad[0,:] # starting joint angles and velocities
+t1 = time.time()
 A_sim, Ad_sim, Add_sim = forward_dynamics(A0, Ad0, Q, t, arm_params)
+t2 = time.time()
+print('simulated {:.6f} sec in {:.6f} sec clock time\n'.format(mt,t2-t1))
 
 # make some plots
 

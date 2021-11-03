@@ -112,7 +112,7 @@ def inverse_dynamics(A,Ad,Add,arm_params):
 	for i in range(n):
 	   M,C = compute_dynamics_terms(A[i,:],Ad[i,:],arm_params)
 	   ACC = Add[i,:]
-	   Q[i,:] = M.dot(ACC) + C
+	   Q[i,:] = (M @ ACC) + C
 	return Q
 
 def forward_dynamics(A0, Ad0, Q, t, arm_params):
@@ -125,7 +125,7 @@ def forward_dynamics(A0, Ad0, Q, t, arm_params):
 	for i in range(n-1):
 		M,C = compute_dynamics_terms(A[i,:], Ad[i,:], arm_params)
 		J = arm_jacobian(A[i,:], arm_params)
-		Add[i+1,:] = np.linalg.inv(M).dot(Q[i,:] - C)
+		Add[i+1,:] = np.linalg.inv(M) @ (Q[i,:] - C)
 		Ad[i+1,:] = Ad[i,:] + Add[i+1,:]*(t[i+1]-t[i])
 		A[i+1,:] = A[i,:] + Ad[i+1,:]*(t[i+1]-t[i])
 	return (A,Ad,Add)
