@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 # to see the figures on the screen, if running in an iPython shell,
 # execute the command %matplotlib
 
+import time # for timing stuff
+
 # KINEMATICS==================================================================
 # Add noise to joint angles and examine distribution of hand positions
 # ============================================================================
