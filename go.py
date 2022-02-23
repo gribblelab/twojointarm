@@ -54,7 +54,7 @@ H1,E1 = joints_to_hand(A1, arm_params)
 H2 = H1 + np.array([0, 0.15])        # 15 cm movement distance
 mt = 0.500                           # movement time (sec)
 sr = 100                             # sample rate (Hz)
-npts = np.int(mt*sr)+1               # number of time points
+npts = int(mt*sr)+1                  # number of time points
 
 # get a minimum-jerk desired hand trajectory
 t,H,Hd,Hdd = minjerk(H1,H2,mt,npts)
