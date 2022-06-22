@@ -5,6 +5,7 @@ arm_params = {
     'r': np.array([0.1692, 0.2277]),  # radius of gyration (metres)
     'm': np.array([2.10, 1.65]),      # mass (kg)
     'i': np.array([0.025, 0.075]),    # moment of inertia (kg*m*m)
+    'FF': np.array([[0.0,0.0],[0.0,0.0]]) # velocity dependent force field applied at hand
 }
 
 def minjerk(H1,H2,t,n):
@@ -40,6 +41,17 @@ def joints_to_hand(A, arm_params):
         E = np.stack(([l1 * np.cos(A[:,0]), l1 * np.sin(A[:,0])]), axis=-1)
         H = E + np.stack(([l2 * np.cos(A[:,0]+A[:,1]), l2 * np.sin(A[:,0]+A[:,1])]), axis=-1)
     return (H,E)
+
+def joints_to_hand_vel(A, Ad, arm_params):
+    l1 = arm_params['l'][0]
+    l2 = arm_params['l'][1]
+    if A.ndim == 1:
+        Hd = np.array([-l1*Ad[0]*np.sin(A[0]) - l2*(Ad[0]+Ad[1])*np.sin(A[0]+A[1]),
+                      l1*Ad[0]*np.cos(A[0]) + l2*(Ad[0]+Ad[1])*np.cos(A[0]+A[1])])
+    else:
+        Hd = np.array([-l1*Ad[0]*np.sin(A[:,0]) - l2*(Ad[:,0]+Ad[:,1])*np.sin(A[:,0]+A[:,1]),
+                      l1*Ad[:,0]*np.cos(A[:,0]) + l2*(Ad[:,0]+Ad[:,1])*np.cos(A[:,0]+A[:,1])]).T
+    return Hd
 
 def hand_to_joints(H, arm_params):
     l1 = arm_params['l'][0]
@@ -112,7 +124,10 @@ def inverse_dynamics(A,Ad,Add,arm_params):
     for i in range(n):
        M,C = compute_dynamics_terms(A[i,:],Ad[i,:],arm_params)
        ACC = Add[i,:]
-       Q[i,:] = (M @ ACC) + C
+       J = arm_jacobian(A[i,:], arm_params)
+       Hd = joints_to_hand_vel(A[i,:],Ad[i,:],arm_params)
+       QFF = J.T @ (arm_params['FF'] @ Hd)
+       Q[i,:] = (M @ ACC) + C + QFF
     return Q
 
 def forward_dynamics(A0, Ad0, Q, t, arm_params):
@@ -125,7 +140,9 @@ def forward_dynamics(A0, Ad0, Q, t, arm_params):
     for i in range(n-1):
         M,C = compute_dynamics_terms(A[i,:], Ad[i,:], arm_params)
         J = arm_jacobian(A[i,:], arm_params)
-        Add[i+1,:] = np.linalg.inv(M) @ (Q[i,:] - C)
+        Hd = joints_to_hand_vel(A[i,:],Ad[i,:],arm_params)
+        QFF = J.T @ (arm_params['FF'] @ Hd)
+        Add[i+1,:] = np.linalg.inv(M) @ (Q[i,:] - C - QFF)
         Ad[i+1,:] = Ad[i,:] + Add[i+1,:]*(t[i+1]-t[i])
         A[i+1,:] = A[i,:] + Ad[i+1,:]*(t[i+1]-t[i])
     return (A,Ad,Add)
